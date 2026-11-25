@@ -170,6 +170,7 @@ RUN mkdir -p /etc/dconf/profile /etc/dconf/db/local.d \
     '[org/gnome/desktop/screensaver]' \
     "picture-uri='file:///usr/share/backgrounds/nyxora.jpg'" \
     > /etc/dconf/db/local.d/00-nyxora \
+    && mkdir -p /etc/dconf/db/site /etc/dconf/db/distro \
     && dconf update
 
 # Nyxora prompt: red, hides the /data prefix (base64 so a paste can't
@@ -231,6 +232,8 @@ RUN printf '%s\n' \
     'mkdir -p /var/run/xrdp' \
     'mkdir -p /run/sshd' \
     'hostname nyxora-host 2>/dev/null || true' \
+    'mkdir -p /run/dbus' \
+    'dbus-daemon --system --fork' \
     '/usr/sbin/xrdp-sesman' \
     '/usr/sbin/xrdp' \
     'exec /usr/sbin/sshd -D' \
