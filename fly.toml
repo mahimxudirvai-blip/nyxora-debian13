@@ -1,4 +1,4 @@
-# rdp-public — Full Debian 13 GNOME desktop on Fly.io
+# rdp-public — Full Debian 13 XFCE desktop on Fly.io
 # App: rdp-public | Region: sin (Singapore) | 24/7 (no auto-stop)
 # VM: 16 CPU / 128 GB RAM (performance — Fly's max: 8 GB per CPU).
 # NOTE: Fly caps RAM at 8 GB per CPU, so 16 CPU = max 128 GB RAM.
