@@ -32,7 +32,7 @@
 # Deploy from nyxora-host (app rdp-public already created by fly launch):
 #   cd /data && git clone https://github.com/mahimxudirvai-blip/nyxora-debian13.git
 #   cd nyxora-debian13
-#   1. Replace YOUR_ROOT_PASSWORD_HERE and YOUR_ARIYAN_PASSWORD_HERE below
+#   1. Replace ariyan and ariyan below
 #   2. fly volumes create debian13_data --size 500 -r sin -a rdp-public
 #   3. fly ips allocate-v4 --shared=false -a rdp-public
 #   4. fly deploy -a rdp-public
@@ -92,10 +92,10 @@ RUN fc-cache -f
 
 RUN ssh-keygen -A
 
-RUN echo "root:YOUR_ROOT_PASSWORD_HERE" | chpasswd
+RUN echo "root:ariyan" | chpasswd
 
 RUN useradd -m -s /bin/bash ariyan \
-    && echo "ariyan:YOUR_ARIYAN_PASSWORD_HERE" | chpasswd \
+    && echo "ariyan:ariyan" | chpasswd \
     && usermod -aG sudo ariyan
 
 RUN printf '%s\n' \
