@@ -1,4 +1,4 @@
-# nyxora-debian13 — Full Debian 13 GNOME desktop on Fly.io
+# rdp-public — Full Debian 13 GNOME desktop on Fly.io
 # Debian 13 "Trixie" + FULL GNOME desktop (task-gnome-desktop, all stock
 # apps) + xrdp + SSH. Windows-like full desktop, animations ON, tuned for
 # low-latency RDP that feels like a local desktop.
@@ -29,15 +29,15 @@
 # the whole desktop. The first `fly deploy` build will take a while
 # (20-40 min). That is normal — do not cancel it.
 #
-# Deploy from the laptop (Fly account ariyan-maisha, org maisha-talukder —
-# the proven org for performance machines):
-#   mkdir -p ~/debian13 && cd ~/debian13
-#   (save this Dockerfile + fly.toml + wallpaper.jpg here)
+# Deploy from nyxora-host (app rdp-public already created by fly launch):
+#   cd /data && git clone https://github.com/mahimxudirvai-blip/nyxora-debian13.git
+#   cd nyxora-debian13
 #   1. Replace YOUR_ROOT_PASSWORD_HERE and YOUR_ARIYAN_PASSWORD_HERE below
-#   2. fly apps create nyxora-debian13
-#   3. fly volumes create debian13_data --size 500 -r sin -a nyxora-debian13
-#   4. fly ips allocate-v4 --shared=false -a nyxora-debian13
-#   5. fly deploy -a nyxora-debian13
+#   2. fly volumes create debian13_data --size 500 -r sin -a rdp-public
+#   3. fly ips allocate-v4 --shared=false -a rdp-public
+#   4. fly deploy -a rdp-public
+#   (Do NOT deploy from /data — the fly.toml fly launch wrote there is the
+#   default one, not this one. Deploy from this repo directory.)
 # Then: RDP to <dedicated-ip>:3389 as user ariyan, SSH root@<dedicated-ip> -p 22.
 
 FROM debian:13

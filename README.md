@@ -1,4 +1,4 @@
-# nyxora-debian13 — Full Debian 13 GNOME desktop on Fly.io
+# rdp-public — Full Debian 13 GNOME desktop on Fly.io
 
 Debian 13 "Trixie" + **full GNOME desktop** (task-gnome-desktop, all stock
 apps) + xrdp + SSH. A Windows-like full desktop, animations ON, tuned so
@@ -25,31 +25,30 @@ RDP feels like a local desktop — no lag.
   `/data`, banner, disk tools show only `/data`, `adduser-nyxora` helper
 - **/data** volume (500 GB) mounted, same as the other Nyxora servers
 
-## Deploy (from the laptop — Fly account ariyan-maisha, org maisha-talukder)
-
-The laptop Fly account is the one whose org (`maisha-talukder`) is proven
-for performance machines. Deploy from there.
+## Deploy (from nyxora-host — app `rdp-public` already created)
 
 ```bash
-mkdir -p ~/debian13 && cd ~/debian13
-# copy Dockerfile, fly.toml and wallpaper.jpg from this folder here
+cd /data && git clone https://github.com/mahimxudirvai-blip/nyxora-debian13.git
+cd nyxora-debian13
 
 # 1. Replace the two password placeholders in the Dockerfile:
 #    YOUR_ROOT_PASSWORD_HERE and YOUR_ARIYAN_PASSWORD_HERE
 #    (use strong passwords; never commit them anywhere)
 
-# 2. Create the app
-fly apps create nyxora-debian13
+# 2. Create the 500 GB volume in sin
+fly volumes create debian13_data --size 500 -r sin -a rdp-public
 
-# 3. Create the 500 GB volume in sin
-fly volumes create debian13_data --size 500 -r sin -a nyxora-debian13
+# 3. Allocate a dedicated IPv4 ($2/mo — RDP needs a stable public IP)
+fly ips allocate-v4 --shared=false -a rdp-public
 
-# 4. Allocate a dedicated IPv4 ($2/mo — RDP needs a stable public IP)
-fly ips allocate-v4 --shared=false -a nyxora-debian13
-
-# 5. Deploy
-fly deploy -a nyxora-debian13
+# 4. Deploy (from this repo directory — NOT from /data, where fly launch
+#    left its default fly.toml)
+fly deploy -a rdp-public
 ```
+
+**Note:** performance machines are untested on the `mahimxudirvai-gmail-com`
+org — if deploy fails with a restriction error, the fallback is the
+`maisha-talukder` org (laptop Fly account).
 
 **The first build takes 20–40 minutes** — the GNOME desktop image is
 several GB. That is normal. Do not cancel it.
