@@ -1,22 +1,23 @@
-# rdp-public — Full Debian 13 GNOME desktop on Fly.io
-# Debian 13 "Trixie" + FULL GNOME desktop (task-gnome-desktop, all stock
-# apps) + xrdp + SSH. Windows-like full desktop, animations ON, tuned for
-# low-latency RDP that feels like a local desktop.
+# rdp-public — Full Debian 13 XFCE desktop on Fly.io
+# Debian 13 "Trixie" + FULL XFCE desktop (task-xfce-desktop, all stock
+# apps) + xrdp + SSH. Windows-like full desktop, tuned for low-latency
+# RDP that feels like a local desktop. XFCE is the fastest desktop for
+# RDP: no 3D compositing needed (xfwm4 runs fine on software rendering),
+# so it stays fast and stable where GNOME Shell crashes.
 #
 # What you get:
-#   - FULL GNOME desktop: Settings, Files, Terminal, Text Editor,
-#     Calculator, Calendar, Clock, Videos (Totem), Music, Photos,
-#     LibreOffice (Writer/Calc/Impress), Thunderbird, GNOME Software store,
-#     GNOME Tweaks, desktop icons, and every other stock GNOME app
-#   - GNOME animations ENABLED (dconf default enable-animations=true;
-#     nothing in this image disables them)
+#   - FULL XFCE desktop: Settings Manager, Thunar file manager, XFCE
+#     Terminal, Mousepad text editor, Ristretto image viewer, Parole
+#     media player, desktop icons, panel with application menu, and
+#     every other stock XFCE app
 #   - Google Chrome (.deb, baked in) + Firefox ESR (Debian apt)
 #   - VLC media player
+#   - LibreOffice (Writer/Calc/Impress), Thunderbird
 #   - RDP on 3389 (Remmina) + SSH on 22 (sshd internal 2222)
 #   - Dev tools baked in: Node 22 (NodeSource), pm2, micro, git, gh,
 #     fastfetch
-#   - Nyxora wallpaper (/usr/share/backgrounds/nyxora.jpg) as the GNOME
-#     default background for every user
+#   - Nyxora wallpaper (/usr/share/backgrounds/nyxora.jpg) as the XFCE
+#     default background for every user (xfconf system default)
 #   - /data volume mounted (same as the other Nyxora servers)
 #
 # xrdp low-latency tuning (see the xrdp.ini / sesman.ini steps below):
@@ -25,19 +26,21 @@
 #   (KillDisconnected=false, no idle/disconnect timeouts) so reconnecting
 #   resumes the same desktop.
 #
-# NOTE: this image is BIG (several GB) because task-gnome-desktop installs
-# the whole desktop. The first `fly deploy` build will take a while
-# (20-40 min). That is normal — do not cancel it.
+# NOTE: this image is BIG (several GB) because LibreOffice + Chrome +
+# the full desktop are baked in. The first `fly deploy` build takes a
+# while (20-40 min). That is normal — do not cancel it. (XFCE itself
+# is far lighter than the GNOME build it replaces.)
 #
-# Deploy from nyxora-host (app rdp-public already created by fly launch):
+# Deploy from nyxora-host (app rdp-public already created, volume +
+# dedicated IP already exist; this is a redeploy of the same app):
 #   cd /data && git clone https://github.com/mahimxudirvai-blip/nyxora-debian13.git
 #   cd nyxora-debian13
-#   1. Replace ariyan and ariyan below
-#   2. fly volumes create debian13_data --size 500 -r sin -a rdp-public
-#   3. fly ips allocate-v4 --shared=false -a rdp-public
-#   4. fly deploy -a rdp-public
+#   fly deploy -a rdp-public
 #   (Do NOT deploy from /data — the fly.toml fly launch wrote there is the
 #   default one, not this one. Deploy from this repo directory.)
+#   Passwords are already set in this file (root + ariyan, both "ariyan",
+#   per the user's instruction). The repo is PUBLIC, so change both
+#   passwords with `passwd` after the first login.
 # Then: RDP to <dedicated-ip>:3389 as user ariyan, SSH root@<dedicated-ip> -p 22.
 
 FROM debian:13
@@ -45,28 +48,27 @@ FROM debian:13
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Base tools + SSH + RDP stack (lean: no recommends here).
-# dconf-cli provides `dconf update` for the system-wide GNOME defaults.
 # NOTE: trixie renamed policykit-1 to polkitd — use polkitd here.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssh-server curl wget gnupg ca-certificates figlet sudo dconf-cli \
+    openssh-server curl wget gnupg ca-certificates figlet sudo \
     xrdp xorg xorgxrdp dbus-x11 polkitd \
     && rm -rf /var/lib/apt/lists/*
 
-# FULL GNOME desktop — WITH recommends, so the full `gnome` set comes in
-# (Settings, Files, Terminal, Videos, Music, Photos, Calendar, Clock,
-# Software store, desktop icons, etc). task-gnome-desktop is the Debian
-# task package for the complete GNOME desktop on trixie.
+# FULL XFCE desktop — WITH recommends, so the full `xfce4` set comes in
+# (Thunar, Terminal, Mousepad, Ristretto, Parole, Settings Manager,
+# panel, desktop icons, etc). task-xfce-desktop is the Debian task
+# package for the complete XFCE desktop on trixie. (It also pulls
+# lightdm, which is never started — no systemd in this container;
+# xrdp is the only login path.)
 RUN apt-get update && apt-get install -y \
-    task-gnome-desktop \
+    task-xfce-desktop \
     && rm -rf /var/lib/apt/lists/*
 
 # Stock apps, explicit so they are present no matter what the task pulls:
-# LibreOffice suite, Thunderbird mail, GNOME Software, GNOME Tweaks,
-# desktop icons (Windows-like icons on the desktop), VLC, Firefox ESR.
+# LibreOffice suite, Thunderbird mail, VLC, Firefox ESR.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice-writer libreoffice-calc libreoffice-impress \
-    thunderbird gnome-software gnome-tweaks \
-    gnome-shell-extension-desktop-icons-ng \
+    thunderbird \
     vlc firefox-esr \
     && rm -rf /var/lib/apt/lists/*
 
@@ -138,40 +140,48 @@ RUN sed -i -E \
     -e 's/^[;#]?[[:space:]]*IdleTimeLimit[[:space:]]*=.*/IdleTimeLimit=0/' \
     /etc/xrdp/sesman.ini
 
-# GNOME session for RDP logins (xrdp always uses Xorg via xorgxrdp).
-RUN echo "gnome-session" > /home/ariyan/.xsession \
+# XFCE session for RDP logins (xrdp always uses Xorg via xorgxrdp).
+# startxfce4 (from xfce4-session) runs /etc/xdg/xfce4/xinitrc, which
+# starts the session D-Bus bus (dbus-launch) and xfce4-session itself.
+RUN echo "exec startxfce4" > /home/ariyan/.xsession \
     && chown ariyan:ariyan /home/ariyan/.xsession \
-    && echo "gnome-session" > /root/.xsession
+    && echo "exec startxfce4" > /root/.xsession
 
-# Skip the GNOME first-login setup wizard for ariyan.
-RUN mkdir -p /home/ariyan/.config \
-    && echo "yes" > /home/ariyan/.config/gnome-initial-setup-done \
-    && chown -R ariyan:ariyan /home/ariyan/.config
-
-# Nyxora wallpaper as the GNOME default background (system-wide dconf
-# default — shows for every user on first login, still changeable).
+# Nyxora wallpaper as the XFCE default background for every user.
+# xfconf reads system defaults from /etc/xdg/... on first login; a
+# per-user ~/.config/xfce4/xfconf/... file (created when the user
+# changes the wallpaper) overrides it, so this stays changeable.
+# The legacy monitor0/image-path key is the hardware-independent
+# fallback xfdesktop reads when no monitor-name-keyed last-image
+# exists (modern last-image keys are keyed by the monitor model name,
+# which is unknown for the xrdp virtual monitor). workspace0/last-image
+# + image-style=5 (zoomed) are set as well, plus monitordefault as a
+# second fallback.
 COPY wallpaper.jpg /usr/share/backgrounds/nyxora.jpg
-RUN mkdir -p /etc/dconf/profile /etc/dconf/db/local.d \
+RUN mkdir -p /etc/xdg/xfce4/xfconf/xfce-perchannel-xml \
     && printf '%s\n' \
-    'user-db:user' \
-    'system-db:local' \
-    'system-db:site' \
-    'system-db:distro' \
-    > /etc/dconf/profile/user \
-    && printf '%s\n' \
-    '[org/gnome/desktop/interface]' \
-    'enable-animations=true' \
-    '' \
-    '[org/gnome/desktop/background]' \
-    "picture-uri='file:///usr/share/backgrounds/nyxora.jpg'" \
-    "picture-uri-dark='file:///usr/share/backgrounds/nyxora.jpg'" \
-    "picture-options='zoom'" \
-    '' \
-    '[org/gnome/desktop/screensaver]' \
-    "picture-uri='file:///usr/share/backgrounds/nyxora.jpg'" \
-    > /etc/dconf/db/local.d/00-nyxora \
-    && mkdir -p /etc/dconf/db/site /etc/dconf/db/distro \
-    && dconf update
+    '<?xml version="1.0" encoding="UTF-8"?>' \
+    '<channel name="xfce4-desktop" version="1.0">' \
+    '  <property name="backdrop" type="empty">' \
+    '    <property name="screen0" type="empty">' \
+    '      <property name="monitor0" type="empty">' \
+    '        <property name="image-path" type="string" value="/usr/share/backgrounds/nyxora.jpg"/>' \
+    '        <property name="image-show" type="bool" value="true"/>' \
+    '        <property name="workspace0" type="empty">' \
+    '          <property name="last-image" type="string" value="/usr/share/backgrounds/nyxora.jpg"/>' \
+    '          <property name="image-style" type="int" value="5"/>' \
+    '        </property>' \
+    '      </property>' \
+    '      <property name="monitordefault" type="empty">' \
+    '        <property name="workspace0" type="empty">' \
+    '          <property name="last-image" type="string" value="/usr/share/backgrounds/nyxora.jpg"/>' \
+    '          <property name="image-style" type="int" value="5"/>' \
+    '        </property>' \
+    '      </property>' \
+    '    </property>' \
+    '  </property>' \
+    '</channel>' \
+    > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
 
 # Nyxora prompt: red, hides the /data prefix (base64 so a paste can't
 # mangle the backslashes — same proven method as the other Nyxora servers).
