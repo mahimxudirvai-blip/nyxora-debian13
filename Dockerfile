@@ -10,15 +10,25 @@
 #     Terminal, Mousepad text editor, Ristretto image viewer, Parole
 #     media player, desktop icons, panel with application menu, and
 #     every other stock XFCE app
-#   - Google Chrome (.deb, baked in) + Firefox ESR (Debian apt)
+#   - Google Chrome (.deb, baked in) + Firefox ESR (Debian apt) —
+#     Chrome is the DEFAULT browser (update-alternatives + MIME
+#     defaults + XFCE Preferred Applications, all set at image level)
 #   - VLC media player
-#   - LibreOffice (Writer/Calc/Impress), Thunderbird
+#   - Full LibreOffice (Writer, Calc, Impress, Draw, Math, Base),
+#     Thunderbird — plus the Linux Mint XFCE app set: GIMP,
+#     xfce4-screenshooter (Print key), Evince, File Roller,
+#     GNOME Calculator, Synaptic, Timeshift, Catfish
 #   - RDP on 3389 (Remmina) + SSH on 22 (sshd internal 2222)
 #   - Dev tools baked in: Node 22 (NodeSource), pm2, micro, git, gh,
 #     fastfetch
 #   - Nyxora wallpaper (/usr/share/backgrounds/nyxora.jpg) as the XFCE
 #     default background for every user (xfconf system default)
 #   - /data volume mounted (same as the other Nyxora servers)
+#
+# NOTE: this is Debian XFCE carrying the Linux Mint XFCE app set — NOT
+# Linux Mint itself. Mint packages are Ubuntu-based and cannot install
+# on Debian/Fly. Mint-only tools (mintinstall, mintupdate, mintmenu,
+# mint-themes, xreader) are not in Debian and are NOT included.
 #
 # xrdp low-latency tuning (see the xrdp.ini / sesman.ini steps below):
 #   TCP_NODELAY + keepalive, fastpath both directions, bitmap + bulk
@@ -65,9 +75,24 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Stock apps, explicit so they are present no matter what the task pulls:
-# LibreOffice suite, Thunderbird mail, VLC, Firefox ESR.
+# Full LibreOffice (the `libreoffice` metapackage = all 6 apps: Writer,
+# Calc, Impress, Draw, Math, Base) + the Linux Mint XFCE app set:
+# GIMP, xfce4-screenshooter (Print key), Evince (document viewer),
+# File Roller (archives), GNOME Calculator, Synaptic (package manager),
+# Timeshift (system restore), Catfish (file search). Thunderbird, VLC,
+# Firefox ESR as before.
+# NOTE on the Print key: no custom keyboard-shortcuts XML is written —
+# libxfce4ui-common (pulled in by the XFCE session) already ships the
+# upstream defaults file /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/
+# xfce4-keyboard-shortcuts.xml, which binds Print to
+# xfce4-screenshooter (Alt+Print = window, Shift+Print = region).
+# Writing a partial replacement XML would shadow that file and wipe
+# the other default shortcuts (Alt+F1/F2/F3, Ctrl+Alt+T, ...), so the
+# upstream file is left exactly as shipped.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libreoffice-writer libreoffice-calc libreoffice-impress \
+    libreoffice \
+    gimp xfce4-screenshooter evince file-roller gnome-calculator \
+    synaptic timeshift catfish \
     thunderbird \
     vlc firefox-esr \
     && rm -rf /var/lib/apt/lists/*
@@ -99,6 +124,39 @@ RUN echo "root:ariyan" | chpasswd
 RUN useradd -m -s /bin/bash ariyan \
     && echo "ariyan:ariyan" | chpasswd \
     && usermod -aG sudo ariyan
+
+# Google Chrome as the DEFAULT browser (image-level, so first login
+# already has it). Three layers — one alone does not stick:
+#   1. update-alternatives: x-www-browser + gnome-www-browser at
+#      priority 200, forced with --set. (Chrome's own postinst also
+#      registers 200; Firefox ESR registers 70, so Chrome would win
+#      anyway — the --set makes it stick regardless of install order.)
+#   2. MIME defaults: mimeapps.list mapping html/xhtml/http/https to
+#      google-chrome.desktop, in /etc/skel (future users) + both
+#      existing users' homes. This is also what exo falls back to
+#      (xdg-mime query default x-scheme-handler/http).
+#   3. XFCE Preferred Applications: helpers.rc WebBrowser=google-chrome
+#      (helper name from /usr/share/xfce4/helpers/google-chrome.desktop,
+#      shipped by xfce4-helpers, pulled in by xfce4-settings).
+RUN update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/google-chrome-stable 200 \
+    && update-alternatives --set x-www-browser /usr/bin/google-chrome-stable \
+    && update-alternatives --install /usr/bin/gnome-www-browser gnome-www-browser /usr/bin/google-chrome-stable 200 \
+    && update-alternatives --set gnome-www-browser /usr/bin/google-chrome-stable \
+    && mkdir -p /etc/skel/.config /home/ariyan/.config /root/.config \
+    && printf '%s\n' \
+    '[Default Applications]' \
+    'text/html=google-chrome.desktop' \
+    'application/xhtml+xml=google-chrome.desktop' \
+    'x-scheme-handler/http=google-chrome.desktop' \
+    'x-scheme-handler/https=google-chrome.desktop' \
+    > /etc/skel/.config/mimeapps.list \
+    && cp /etc/skel/.config/mimeapps.list /home/ariyan/.config/mimeapps.list \
+    && cp /etc/skel/.config/mimeapps.list /root/.config/mimeapps.list \
+    && mkdir -p /etc/skel/.config/xfce4 /home/ariyan/.config/xfce4 /root/.config/xfce4 \
+    && printf '%s\n' 'WebBrowser=google-chrome' > /etc/skel/.config/xfce4/helpers.rc \
+    && cp /etc/skel/.config/xfce4/helpers.rc /home/ariyan/.config/xfce4/helpers.rc \
+    && cp /etc/skel/.config/xfce4/helpers.rc /root/.config/xfce4/helpers.rc \
+    && chown -R ariyan:ariyan /home/ariyan/.config
 
 RUN printf '%s\n' \
     'Port 2222' \

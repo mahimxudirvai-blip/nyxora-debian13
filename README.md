@@ -22,9 +22,10 @@ desktop for an RDP server.
 - **Nyxora wallpaper** (`wallpaper.jpg` in this folder) installed as the
   XFCE default background for every user (xfconf system default at
   `/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml`)
-- **Browsers**: Google Chrome (baked-in .deb) + Firefox ESR (Debian apt)
+- **Google Chrome is the default browser** (Firefox ESR is also installed). Set at image level in three layers — update-alternatives (x-www-browser + gnome-www-browser, priority 200), MIME defaults (mimeapps.list), and XFCE Preferred Applications (helpers.rc `WebBrowser=google-chrome`) — so it sticks from the first login.
 - **VLC** media player
-- **LibreOffice** (Writer/Calc/Impress), **Thunderbird**
+- **Full LibreOffice** — Writer, Calc, Impress, Draw, Math, Base (the `libreoffice` metapackage), **Thunderbird**
+- **Linux Mint XFCE app set**: GIMP, xfce4-screenshooter (Print key takes a screenshot — already bound by the upstream XFCE defaults), Evince (document viewer), File Roller (archives), GNOME Calculator, Synaptic (package manager), Timeshift (system restore), Catfish (file search)
 - **Dev tools**: Node 22 (NodeSource), pm2, micro, git, gh, fastfetch
 - **xrdp low-latency tuning**: TCP_NODELAY + keepalive, fastpath both
   directions, bitmap + bulk compression, 32bpp full colour; sessions
@@ -37,6 +38,10 @@ desktop for an RDP server.
 - **Nyxora pattern**: red prompt with `/data` hidden, root lands in
   `/data`, banner, disk tools show only `/data`, `adduser-nyxora` helper
 - **/data** volume (500 GB) mounted, same as the other Nyxora servers
+
+## Linux Mint — honest note
+
+This is **Debian XFCE carrying the Linux Mint XFCE app set — NOT Linux Mint itself**. Mint's own packages are built for Ubuntu and cannot install on Debian (and Fly runs Docker images, so a Mint ISO can't be installed here at all). Mint-only tools — mintinstall, mintupdate, mintmenu, mint-themes, xreader — are not in Debian and are not included. The apps above are the Debian equivalents of what Mint XFCE ships, so day-to-day it feels like a full Mint XFCE install.
 
 ## Deploy (from nyxora-host — app `rdp-public`, redeploy)
 
