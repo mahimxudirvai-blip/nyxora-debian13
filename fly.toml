@@ -1,16 +1,15 @@
 # rdp-public — Full Debian 13 GNOME desktop on Fly.io
 # App: rdp-public | Region: sin (Singapore) | 24/7 (no auto-stop)
-# VM: 10 CPU / 80 GB RAM (performance).
-# NOTE: Fly caps RAM at 8 GB per CPU, so 10 CPU = max 80 GB RAM.
-# 128 GB RAM would need 16 CPU. Ask before switching to 16 CPU.
+# VM: 16 CPU / 128 GB RAM (performance — Fly's max: 8 GB per CPU).
+# NOTE: Fly caps RAM at 8 GB per CPU, so 16 CPU = max 128 GB RAM.
 # Volume: debian13_data (500 GB — Fly's max per volume) mounted at /data.
 # NOTE: Fly allows max 1 volume per machine and max 500 GB per volume,
 # so 1 TB on one machine is NOT possible. 500 GB is the max.
 # Ports: SSH 22 -> 2222, RDP 3389 -> 3389.
 # Needs a dedicated IPv4 ($2/mo): fly ips allocate-v4 --shared=false -a rdp-public
 # Deploy from nyxora-host (app already created; org mahimxudirvai-gmail-com).
-# NOTE: performance machines are UNTESTED on this org — if deploy fails with
-# a restriction error, the fallback is the maisha-talukder org (laptop).
+# NOTE: performance machines WORK on this org (proven 2026-11-25 — 10 CPU
+# machine launched fine; 16 CPU is the same kind, just bigger).
 
 app = "rdp-public"
 primary_region = "sin"
@@ -20,8 +19,8 @@ min_machines_running = 1
 
 [[vm]]
   cpu_kind = "performance"
-  cpus = 10
-  memory_mb = 81920
+  cpus = 16
+  memory_mb = 131072
 
 [[mounts]]
   source = "debian13_data"
